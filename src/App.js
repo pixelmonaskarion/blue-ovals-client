@@ -2,10 +2,12 @@ import './App.css';
 import { useEffect } from 'react';
 import Crypto from "./Crypto.js"
 const Electron = require("electron");
+var protobuf = require("protobufjs");
 
 function App() {
 	useEffect(() => {
 		(async () => {
+			let protos = await load_protobufs();
 			if (await Electron.ipcRenderer.invoke('get-auth') === undefined) {
 				let basic_auth_json = {
 					email: "christopher@huntwork.net",
@@ -41,7 +43,8 @@ function App() {
 						private_key: keys.privateKey,
 					};
 					await Electron.ipcRenderer.invoke('save-auth', full_auth_json);
-					send_message(basic_auth_json.email, "Hello World?");
+					let Message = protos.lookupType("Message");
+					send_message(basic_auth_json.email, Message.create({text: "Hello Proto!"}));
 				} else {
 					throw ids_res.error;
 				}
@@ -50,17 +53,21 @@ function App() {
 			const ws = new WebSocket('wss://chrissytopher.com:40441/events/' + auth.uuid);
 			ws.onerror = console.error;
 
-			ws.onopen = () => {
+			ws.onopen = async () => {
 				console.log("ws started");
 				ws.send(auth.email);
 				ws.send(auth.password);
-				send_message(auth.email, "Hello World?");
+				let protos = await load_protobufs();
+				let Message = protos.lookupType("Message");
+				send_message(auth.email, Message.create({text: "Hello Proto!"}));
 			};
 
 			ws.onmessage = async function message(event) {
 				let data = event.data;
 				if (data == "😝") return;
-				console.log(await Crypto.decrypt(auth.private_key, data.toString()));
+				let protos = await load_protobufs();
+				let Message = protos.lookupType("Message");
+				console.log(Message.decode(await Crypto.decryptBytes(auth.private_key, data.toString())).text);
 			};
 		})();
 	}, []);
@@ -71,11 +78,24 @@ function App() {
 	);
 }
 
+async function load_protobufs() {
+	return new Promise((resolve, reject) => {
+		protobuf.load(__dirname + "/../build/message.proto", function (err, root) {
+			if (err) {
+				reject(err);
+			}
+			resolve(root);
+		});
+	})
+}
+
 async function send_message(recipient, message) {
 	let auth = await Electron.ipcRenderer.invoke('get-auth');
 	let ids = await (await fetch("https://chrissytopher.com:40441/query-ids/" + recipient)).json();
 	ids.ids.forEach(async device => {
-		let encrypted_message = await Crypto.encrypt(device.public_key, message);
+		let protos = await load_protobufs();
+		let Message = protos.lookupType("Message");
+		let encrypted_message = await Crypto.encryptBytes(device.public_key, Message.encode(message).finish());
 		let res = await fetch("https://chrissytopher.com:40441/post-message/", {
 			method: 'POST',
 			headers: {

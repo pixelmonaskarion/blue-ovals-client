@@ -12,11 +12,11 @@ const Crypto = require("./Crypto");
 
 let mainWindow;
 let auth;
+let protos;
 
-//Don't call this rn but we will be using protobufs, don't question me on this one
 async function load_protobufs() {
 	return new Promise((resolve, reject) => {
-		protobuf.load("/home/christopher/AndroidStudioProjects/shared-clipboard/shared-clipboard-electron-react/public/shared_clipboard.proto", function (err, root) {
+		protobuf.load(__dirname + "/../build/message.proto", function (err, root) {
 			if (err) {
 				reject(err);
 			}
@@ -46,6 +46,7 @@ async function createWindow() {
 	if (existsSync(app.getPath("userData") + "/auth.json")) {
 		auth = JSON.parse(readFileSync(app.getPath("userData") + "/auth.json"));
 	}
+	protos = await load_protobufs();
 	mainWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
@@ -63,6 +64,14 @@ electron.ipcMain.handle('save-auth', async (event, new_auth) => {
 
 electron.ipcMain.handle('get-auth', async (event) => {
 	return auth;
+});
+
+electron.ipcMain.handle('get-protos', async (event) => {
+	return protos;
+});
+
+electron.ipcMain.handle('proto-lookup', async (event, type) => {
+	return protos.lookupType(type);
 });
 
 // This method will be called when Electron has finished

@@ -15,10 +15,20 @@ async function generateKeyPair() {
 
 async function encrypt(publicKey, plaintext) {
 	let publicKeyObject = await importRSAPublicKeyFromString(publicKey);
-	return await encryptDataWithRSAPublicKey(plaintext, publicKeyObject);
+	return await encryptDataWithRSAPublicKey(new TextEncoder().encode(plaintext), publicKeyObject);
+}
+
+async function encryptBytes(publicKey, data) {
+	let publicKeyObject = await importRSAPublicKeyFromString(publicKey);
+	return await encryptDataWithRSAPublicKey(data, publicKeyObject);
 }
 
 async function decrypt(privateKey, encryptedText) {
+	let privateKeyObject = await importRSAPrivateKeyFromString(privateKey);
+	return new TextDecoder().decode(await decryptDataWithRSAPrivateKey(encryptedText, privateKeyObject));
+}
+
+async function decryptBytes(privateKey, encryptedText) {
 	let privateKeyObject = await importRSAPrivateKeyFromString(privateKey);
 	return await decryptDataWithRSAPrivateKey(encryptedText, privateKeyObject);
 }
@@ -47,7 +57,7 @@ async function test() {
 	console.log(`Decrypted text: ${decryptedText}`);
 }
 
-let exported = { generateKeyPair, decrypt_message, encrypt_message, test, encrypt, decrypt };
+let exported = { generateKeyPair, decrypt_message, encrypt_message, test, encrypt, decrypt, encryptBytes, decryptBytes };
 export default exported;
 
 // Generate RSA key pair
@@ -159,9 +169,8 @@ const importRSAPrivateKeyFromString = async (keyString) => {
 };
 
 // Encrypt data using RSA public key
-const encryptDataWithRSAPublicKey = async (data, publicKey) => {
+const encryptDataWithRSAPublicKey = async (dataBytes, publicKey) => {
 	const blockSize = 190; // Maximum RSA block size is 190 bytes for OAEP padding
-	const dataBytes = new TextEncoder().encode(data);
 	const encryptedBlocks = [];
 	let offset = 0;
 	while (offset < dataBytes.length) {
@@ -213,8 +222,7 @@ const decryptDataWithRSAPrivateKey = async (encryptedDataString, privateKey) => 
 		decryptedData.set(new Uint8Array(block), offsetBytes);
 		offsetBytes += block.byteLength;
 	});
-	const decryptedDataString = new TextDecoder().decode(decryptedData);
-	return decryptedDataString;
+	return decryptedData;
 };
 
 const encryptDataWithRSAPublicKeyAsArray = async (data, publicKey) => {
