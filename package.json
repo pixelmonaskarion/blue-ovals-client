@@ -1,0 +1,60 @@
+{
+  "name": "shared-clipboard-electron-react",
+  "version": "0.1.0",
+  "private": true,
+  "main": "public/electron.js",
+  "homepage": "./",
+  "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "@electron/remote": "^2.0.10",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "electron-is-dev": "^2.0.0",
+    "electron-squirrel-startup": "^1.0.0",
+    "protobufjs": "^7.2.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-qr-code": "^2.0.12",
+    "react-scripts": "5.0.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.1"
+  },
+  "scripts": {
+    "build": "craco build",
+    "start": "craco build && electron-forge start",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^6.3.0",
+    "@electron-forge/maker-deb": "^6.3.0",
+    "@electron-forge/maker-rpm": "^6.3.0",
+    "@electron-forge/maker-squirrel": "^6.3.0",
+    "@electron-forge/maker-zip": "^6.3.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.3.0",
+    "@electron/rebuild": "^3.3.0",
+    "electron": "^25.4.0",
+    "webpack-node-externals": "^3.0.0"
+  }
+}
