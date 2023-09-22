@@ -57,9 +57,9 @@ function App() {
 				send_message(auth.email, "Hello World?");
 			};
 
-			ws.ononmessage = async function message(data) {
+			ws.onmessage = async function message(event) {
+				let data = event.data;
 				if (data == "😝") return;
-				console.log(data.toString());
 				console.log(await Crypto.decrypt(auth.private_key, data.toString()));
 			};
 		})();

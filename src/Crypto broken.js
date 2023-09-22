@@ -35,7 +35,7 @@ async function decryptAsArray(privateKey, encryptedText) {
 
 async function test() {
 	const plaintext = "Hello World!";
-	console.log(`plain text ${plaintext}`);
+    console.log(`plain text ${plaintext}`);
 	const keyPair = await generateKeyPair();
 	console.log(`Public key: ${keyPair.publicKey}`);
 	console.log(`Private key: ${keyPair.privateKey}`);
@@ -47,7 +47,7 @@ async function test() {
 	console.log(`Decrypted text: ${decryptedText}`);
 }
 
-let exported = { generateKeyPair, decrypt_message, encrypt_message, test, encrypt, decrypt };
+let exported = { generateKeyPair, decrypt_message, encrypt_message, test, encrypt, decrypt, base64ToArrayBuffer };
 export default exported;
 
 // Generate RSA key pair
@@ -191,7 +191,7 @@ const encryptDataWithRSAPublicKey = async (data, publicKey) => {
 const decryptDataWithRSAPrivateKey = async (encryptedDataString, privateKey) => {
 	const encryptedData = base64ToArrayBuffer(encryptedDataString);
 	const blockSize = privateKey.algorithm.modulusLength / 8;
-	const numBlocks = Math.ceil(encryptedData.byteLength / blockSize);
+	const numBlocks = Math.ceil(encryptedData.length / blockSize);
 	const decryptedBlocks = [];
 	for (let i = 0; i < numBlocks; i++) {
 		const blockOffset = i * blockSize;
