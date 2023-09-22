@@ -8,26 +8,10 @@ const { WebSocket } = require("ws");
 const { existsSync, writeFileSync, readFileSync } = require("fs");
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
+const Crypto = require("./Crypto");
 
 let mainWindow;
 let auth;
-
-function startWebsocket() {
-	//We will need this later
-	const ws = new WebSocket('wss://chrissytopher.com:40441/events/' + auth.uuid);
-
-	ws.on('error', console.error);
-
-	ws.on('open', function open() {
-		console.log("ws started");
-		ws.send(auth.email);
-		ws.send(auth.password);
-	});
-
-	ws.on('message', async function message(data) {
-
-	});
-}
 
 //Don't call this rn but we will be using protobufs, don't question me on this one
 async function load_protobufs() {
@@ -58,31 +42,27 @@ async function createWindow() {
 	tray.setContextMenu(contextMenu)
 
 	// protos = await load_protobufs();
-	if (!existsSync(app.getPath("userData") + "/auth.json")) {
-		mainWindow = new BrowserWindow({
-			width: 800,
-			height: 600,
-			webPreferences: { nodeIntegration: true, contextIsolation: false },
-		});
-		mainWindow.loadFile(path.join(__dirname, "../build/index.html"));
-		let webContents = mainWindow.webContents;
-		remote_main.enable(webContents)
-	} else {
+	console.log(app.getPath("userData"));
+	if (existsSync(app.getPath("userData") + "/auth.json")) {
 		auth = JSON.parse(readFileSync(app.getPath("userData") + "/auth.json"));
-		afterAuth();
 	}
-
-	
-}
-
-function afterAuth() {
-	startWebsocket();
+	mainWindow = new BrowserWindow({
+		width: 800,
+		height: 600,
+		webPreferences: { nodeIntegration: true, contextIsolation: false },
+	});
+	mainWindow.loadFile(path.join(__dirname, "../build/index.html"));
+	let webContents = mainWindow.webContents;
+	remote_main.enable(webContents)
 }
 
 electron.ipcMain.handle('save-auth', async (event, new_auth) => {
-		auth = new_auth;
-        writeFileSync(app.getPath("userData") + "/auth.json", JSON.stringify(auth));
-        afterAuth();
+	auth = new_auth;
+	writeFileSync(app.getPath("userData") + "/auth.json", JSON.stringify(auth));
+});
+
+electron.ipcMain.handle('get-auth', async (event) => {
+	return auth;
 });
 
 // This method will be called when Electron has finished

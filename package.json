@@ -1,5 +1,5 @@
 {
-  "name": "shared-clipboard-electron-react",
+  "name": "blue-ovals-client",
   "version": "0.1.0",
   "private": true,
   "main": "public/electron.js",

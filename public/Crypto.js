@@ -144,7 +144,7 @@ const importRSAPublicKeyFromString = async (keyString) => {
 // Import RSA private key from string
 const importRSAPrivateKeyFromString = async (keyString) => {
 	const keyBuffer = base64ToArrayBuffer(keyString);
-	const privateKey = await window.crypto.subtle.importKey(
+	const privateKey = SubtleCrypto.importKey(
 		"pkcs8",
 		keyBuffer,
 		{
@@ -196,7 +196,7 @@ const decryptDataWithRSAPrivateKey = async (encryptedDataString, privateKey) => 
 		const blockOffset = i * blockSize;
 		const block = encryptedData.slice(blockOffset, Math.min(blockOffset + blockSize, encryptedData.length));
         try {
-            const decryptedBlock = await window.crypto.subtle.decrypt(
+            const decryptedBlock = await SubtleCrypto.decrypt(
                 {
                     name: "RSA-OAEP",
                     hash: "SHA-256",
