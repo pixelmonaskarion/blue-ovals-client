@@ -4,15 +4,16 @@ const path = require("path");
 const remote_main = require('@electron/remote/main');
 var protobuf = require("protobufjs");
 remote_main.initialize();
-const { WebSocket } = require("ws");
 const { existsSync, writeFileSync, readFileSync } = require("fs");
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const Crypto = require("./Crypto");
+const sqlite3 = require('sqlite3').verbose();
 
 let mainWindow;
 let auth;
 let protos;
+let db;
 
 async function load_protobufs() {
 	return new Promise((resolve, reject) => {
@@ -47,6 +48,9 @@ async function createWindow() {
 		auth = JSON.parse(readFileSync(app.getPath("userData") + "/auth.json"));
 	}
 	protos = await load_protobufs();
+	db = new sqlite3.Database(app.getPath("userData") + "/messages.db");
+	//unsure of what will happen if an older version has different/less fields, if this fails after changes delete the database file
+	db.run("CREATE TABLE IF NOT EXISTS messages (uuid TEXT, text TEXT)");
 	mainWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
@@ -66,13 +70,43 @@ electron.ipcMain.handle('get-auth', async (event) => {
 	return auth;
 });
 
-electron.ipcMain.handle('get-protos', async (event) => {
-	return protos;
+electron.ipcMain.handle('save-message', async (event, message) => {
+	//message should be a protobuf object
+	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}')`;
+	db.run(sql_command);
 });
 
-electron.ipcMain.handle('proto-lookup', async (event, type) => {
-	return protos.lookupType(type);
+electron.ipcMain.handle('get-all-messages', async (event) => {
+	let promise = new Promise((resolve, reject) => {
+		let messages = [];
+		db.each("SELECT * FROM messages", (err, row) => {
+			if (err) {
+				reject(err);
+			}
+			console.log(row);
+			messages.push(row);
+		}, () => {
+			resolve(messages);
+		});
+	})
+	return promise;
 });
+
+electron.ipcMain.handle('get-some-messages', async (event, sql) => {
+	let promise = new Promise((resolve, reject) => {
+		let messages = [];
+		db.each(`SELECT ${sql} FROM messages`, (err, row) => {
+			if (err) {
+				reject(err);
+			}
+			messages.push(row);
+		}, () => {
+			resolve(messages);
+		});
+	})
+	return promise;
+});
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

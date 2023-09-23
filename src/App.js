@@ -49,7 +49,7 @@ function App() {
 					};
 					await Electron.ipcRenderer.invoke('save-auth', full_auth_json);
 					let Message = protos.lookupType("Message");
-					send_message(basic_auth_json.email, Message.create({text: "Hello Proto!"}));
+					send_message(basic_auth_json.email, Message.create({text: "Hello Proto!", uuid: window.crypto.randomUUID()}));
 				} else {
 					throw ids_res.error;
 				}
@@ -64,7 +64,7 @@ function App() {
 				ws.send(auth.password);
 				let protos = await load_protobufs();
 				let Message = protos.lookupType("Message");
-				send_message(auth.email, Message.create({text: "Hello Proto!"}));
+				send_message(auth.email, Message.create({text: "Hello Proto!", uuid: window.crypto.randomUUID()}));
 			};
 
 			ws.onmessage = async function message(event) {
@@ -72,7 +72,9 @@ function App() {
 				if (data == "😝") return;
 				let protos = await load_protobufs();
 				let Message = protos.lookupType("Message");
-				console.log(Message.decode(await Crypto.decryptBytes(auth.private_key, data.toString())).text);
+				let message = Message.decode(await Crypto.decryptBytes(auth.private_key, data.toString()));
+				await Electron.ipcRenderer.invoke('save-message', message);
+				console.log(await get_messages());
 			};
 		})();
 	}, []);
@@ -167,7 +169,7 @@ async function handleSend(message)
 {
 	let protos = await load_protobufs();
 	let Message = protos.lookupType("Message");
-	send_message("christopher@huntwork.net", Message.create({text: message}));
+	send_message("christopher@huntwork.net", Message.create({text: message, uuid: window.crypto.randomUUID()}));
 }
 
 
@@ -205,6 +207,19 @@ async function send_message(recipient, message) {
 		});
 		console.log(await res.json());
 	});
+}
+
+//to save a message
+// await Electron.ipcRenderer.invoke('save-message', <PROTO MESSAGE>);
+async function get_messages() {
+	let protos = await load_protobufs();
+	let messages_raw = await Electron.ipcRenderer.invoke('get-all-messages');
+	let messages_proto = [];
+	messages_raw.forEach((message) => {
+		let Message = protos.lookupType("Message");
+		messages_proto.push(Message.create(message));
+	});
+	return messages_proto;
 }
 
 const Message = (props) => {
