@@ -1,8 +1,13 @@
 import './App.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Crypto from "./Crypto.js"
+import { TextField, IconButton, Send, Icon } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 const Electron = require("electron");
 var protobuf = require("protobufjs");
+
+
+
 
 function App() {
 	useEffect(() => {
@@ -71,12 +76,60 @@ function App() {
 			};
 		})();
 	}, []);
+
+	const messages = [
+		{
+			self: false,
+			text: "Hello World!"
+		},
+		{
+			self: true,
+			text: "Hello World!"
+		},
+		{
+			self: true,
+			text: "This is a mesaging app"
+		},
+		{
+			self: false,
+			text: "Yes it is"
+		}
+	];
+
+	const [fieldValue, setFieldValue] = useState('');
+
+	function handleTextFieldChange(e) {
+		setFieldValue(e.target.value);
+	}
+
+	
+
 	return (
-		<div className="App">
-			<h1>Hi Ben you should do some ui 👍️👍️</h1>
+		<div className='App'>
+			<div className='messagesList'>
+				{/* Render chat messages here */}
+				{messages.map((message2, i) => (
+					<Message message={message2.text} self={message2.self}/>
+				))}
+				{/* Add more message items as needed */}
+			</div>
+			<div className='inputContainer'>
+				<TextField className='messageInput' label="Type message..." variant="standard" onChange={handleTextFieldChange}/>
+				<IconButton onClick={() => handleSend(fieldValue)}>
+					<SendIcon/>
+				</IconButton>
+			</div>
 		</div>
 	);
 }
+
+async function handleSend(message)
+{
+	let protos = await load_protobufs();
+	let Message = protos.lookupType("Message");
+	send_message("christopher@huntwork.net", Message.create({text: message}));
+}
+
 
 async function load_protobufs() {
 	return new Promise((resolve, reject) => {
@@ -112,6 +165,17 @@ async function send_message(recipient, message) {
 		});
 		console.log(await res.json());
 	});
+}
+
+const Message = (props) => {
+	const message = props.message ? props.message : "no message";
+	const self = props.self;
+
+	return (
+		<div className={self ? 'selfMessage' : 'otherMessage'}>
+			<p>{message}</p>
+		</div>
+	);
 }
 
 export default App;

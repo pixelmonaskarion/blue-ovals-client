@@ -1,5 +1,8 @@
 .App {
   text-align: center;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: hidden;
 }
 
 .App-logo {
@@ -36,3 +39,44 @@
     transform: rotate(360deg);
   }
 }
+
+.messagesList {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 89vh;
+}
+
+.inputContainer {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid black;
+  height: 10vh;
+  padding: 0.5vh;
+}
+
+.messageInput {
+  flex: 1;
+  padding: 0.5vh;
+}
+
+.selfMessage {
+  background-color: #3e9eff;
+  align-self: flex-end;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 15px 15px 0px 15px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+.otherMessage {
+  background-color: gray;
+  align-self: flex-start;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 0px 15px 15px 15px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
