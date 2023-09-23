@@ -58,6 +58,8 @@
 .messageInput {
   flex: 1;
   padding: 0.5vh;
+  margin-left: 2vw;
+  margin-right: 3vw;
 }
 
 .selfMessage {
@@ -68,6 +70,7 @@
   border-radius: 15px 15px 0px 15px;
   padding-top: 0px;
   padding-bottom: 0px;
+  max-width: 60vw;
 }
 
 .otherMessage {
@@ -78,5 +81,6 @@
   border-radius: 0px 15px 15px 15px;
   padding-top: 0px;
   padding-bottom: 0px;
+  max-width: 60vh;
 }
 
