@@ -3,4 +3,5 @@ syntax = "proto3";
 message Message {
     string text = 1;
     string uuid = 2;
+    string timestamp = 3;
 }

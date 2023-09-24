@@ -50,7 +50,7 @@ async function createWindow() {
 	protos = await load_protobufs();
 	db = new sqlite3.Database(app.getPath("userData") + "/messages.db");
 	//unsure of what will happen if an older version has different/less fields, if this fails after changes delete the database file
-	db.run("CREATE TABLE IF NOT EXISTS messages (uuid TEXT, text TEXT)");
+	db.run("CREATE TABLE IF NOT EXISTS messages (uuid TEXT, text TEXT, sender TEXT, sent_timestamp BIGINT)");
 	mainWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
@@ -70,9 +70,11 @@ electron.ipcMain.handle('get-auth', async (event) => {
 	return auth;
 });
 
-electron.ipcMain.handle('save-message', async (event, message) => {
+electron.ipcMain.handle('save-message', async (event, message, sender) => {
 	//message should be a protobuf object
-	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}')`;
+	console.log(message);
+	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}', '${sender}', ${message.timestamp})`;
+	console.log(sql_command);
 	db.run(sql_command);
 });
 
@@ -83,7 +85,6 @@ electron.ipcMain.handle('get-all-messages', async (event) => {
 			if (err) {
 				reject(err);
 			}
-			console.log(row);
 			messages.push(row);
 		}, () => {
 			resolve(messages);
