@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import Crypto from "./Crypto.js"
 import { TextField, IconButton} from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { TenMp } from '@mui/icons-material';
 const Electron = require("electron");
 var protobuf = require("protobufjs");
 let protos = await load_protobufs();
@@ -29,7 +28,6 @@ function MessagesScreen() {
 
     Electron.ipcRenderer.invoke('get-all-messages').then(data => {
         setMessageList(afterGetmessages(data));
-        //console.log(messageList);
     });
 
     useEffect(() => {
@@ -105,6 +103,28 @@ async function send_message(recipient, message) {
 			})
 		});
 	});
+	if (recipient !== auth.email) {
+		let your_ids = await (await fetch("https://chrissytopher.com:40441/query-ids/" + auth.email)).json();
+		your_ids.ids.forEach(async device => {
+			let Message = protos.lookupType("Message");
+			let encrypted_message = await Crypto.encryptBytes(device.public_key, Message.encode(message).finish());
+			// eslint-disable-next-line no-unused-vars
+			let res = await fetch("https://chrissytopher.com:40441/post-message/", {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					account: {
+						email: auth.email,
+						password: auth.password,
+					},
+					recipient: device.uuid,
+					data: encrypted_message,
+				})
+			});
+		});
+	}
 }
 
 function new_message(text, replyuuid) {

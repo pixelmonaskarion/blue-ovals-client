@@ -14,7 +14,7 @@ const sqlite3 = require('sqlite3').verbose();
 let mainWindow;
 let auth;
 let protos;
-let db;
+let messages_db;
 
 async function load_protobufs() {
 	return new Promise((resolve, reject) => {
@@ -56,9 +56,9 @@ async function createWindow() {
 		auth = JSON.parse(readFileSync(app.getPath("userData") + "/auth.json"));
 	}
 	protos = await load_protobufs();
-	db = new sqlite3.Database(app.getPath("userData") + "/messages.db");
+	messages_db = new sqlite3.Database(app.getPath("userData") + "/messages.db");
 	//unsure of what will happen if an older version has different/less fields, if this fails after changes delete the database file
-	db.run("CREATE TABLE IF NOT EXISTS messages (uuid TEXT, text TEXT, sender TEXT, sent_timestamp BIGINT)");
+	messages_db.run("CREATE TABLE IF NOT EXISTS messages (uuid TEXT, text TEXT, sender TEXT, sent_timestamp BIGINT, reply BIT, aboutuuid TEXT, status TEXT, reaction TEXT)");
 	mainWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
@@ -89,15 +89,33 @@ electron.ipcMain.handle('save-message', async (event, message, sender) => {
 });
 
 function save_message(message, sender) {
-	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}', '${sender}', ${message.timestamp})`;
-	db.run(sql_command);
-	return {uuid: message.uuid, text: message.text, sender: sender, sent_timestamp: message.timestamp};
+	let extra_columns = ", ";
+	let extra_values = ", ";
+	let message_object = protos.lookupType("Message").toObject(message);
+	if (message_object.aboutuuid != undefined) {
+		extra_columns += "aboutuuid, ";
+		extra_values += `'${message_object.aboutuuid}', `;
+	}
+	if (message_object.status != undefined) {
+		extra_columns += "status, ";
+		extra_values += `'${message_object.status}', `;
+	}
+	if (message_object.reaction != undefined) {
+		extra_columns += "reaction, ";
+		extra_values += `'${message_object.reaction}', `;
+	}
+
+	extra_columns = extra_columns.substring(0,-2);
+	extra_values = extra_values.substring(0,-2);
+	let sql_command = `INSERT INTO messages (uuid, text, sender, sent_timestamp, reply${extra_columns}) VALUES ('${message_object.uuid}', '${message_object.text}', '${sender}', ${message_object.timestamp}, ${message_object.reply}${extra_values})`;
+	messages_db.run(sql_command);
+	return {...message_object, sender: sender};
 }
 
 electron.ipcMain.handle('get-all-messages', async (event) => {
 	let promise = new Promise((resolve, reject) => {
 		let messages = [];
-		db.each("SELECT * FROM messages", (err, row) => {
+		messages_db.each("SELECT * FROM messages", (err, row) => {
 			if (err) {
 				reject(err);
 			}
@@ -112,7 +130,7 @@ electron.ipcMain.handle('get-all-messages', async (event) => {
 electron.ipcMain.handle('get-some-messages', async (event, sql) => {
 	let promise = new Promise((resolve, reject) => {
 		let messages = [];
-		db.each(`SELECT ${sql} FROM messages`, (err, row) => {
+		messages_db.each(`SELECT ${sql} FROM messages`, (err, row) => {
 			if (err) {
 				reject(err);
 			}
@@ -145,9 +163,6 @@ electron.ipcMain.handle('start-websocket', async (event) => {
 		save_message(message, message_json.sender);
 		//for now there is no way to get a callback on a new message, poll the database on an interval
 		mainWindow.webContents.send('websocket-message', message);
-
-		//testing code
-		console.log(message);
 	});
 });
 
