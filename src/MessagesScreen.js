@@ -48,7 +48,7 @@ function MessagesScreen() {
         message_elements = <div className='messagesList'>
             {/* Render chat messages here */}
             {messageList.map((message2, i) => (
-                <Message message={message2.text} self={(message2.sender === auth.email)} timestamp={message2.sent_timestamp}/>
+                <Message message={message2.text} self={(message2.sender === auth.email)} timestamp={message2.sent_timestamp} messageList={messageList} id={i}/>
             ))}
             {/* Add more message items as needed */}
             <div ref={messagesEndRef} />
@@ -137,6 +137,27 @@ const Message = (props) => {
 	const message = props.message ? props.message : "no message";
 	const self = props.self;
 	const timestamp = new Date(props.timestamp);
+	//passing in the message list allows to be able to compare to other messagess
+	const messageList = props.messageList;
+	//id is the number message it is
+	const id = props.id;
+
+	//difference in minutes between messages to show timestamp
+	const time_difference_thresh = 10;
+
+	var showTimestamp = false;
+
+	if (id != messageList.length - 1)
+	{
+		var millisDiff = new Date(messageList[id + 1].sent_timestamp) - timestamp;
+		var minutesDiff = Math.floor((millisDiff/1000)/60);
+		console.log(minutesDiff);
+		if (minutesDiff > time_difference_thresh)
+		{
+			showTimestamp = true;
+		}
+	}
+	
 
 	return (
 		<div className={self ? 'selfMessageWrapper' : 'otherMessageWrapper'}>
@@ -144,7 +165,7 @@ const Message = (props) => {
 				<p>{message}</p>
 			</div>
 			
-			<p className='timestamp'>{timestamp.getHours()%12}:{timestamp.getMinutes()}</p>
+			<p style={{display: (showTimestamp ? 'block' : 'none')}} className='timestamp'>{timestamp.getHours()%12}:{timestamp.getMinutes()}</p>
 		</div>
 	);
 }
