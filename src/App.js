@@ -53,31 +53,15 @@ function App() {
 					throw ids_res.error;
 				}
 			}
-			let auth = await Electron.ipcRenderer.invoke('get-auth');
-			const ws = new WebSocket('wss://chrissytopher.com:40441/events/' + auth.uuid);
-      ws.onclose = () => {
-        console.log("ws closing");
-      }
-			ws.onerror = console.error;
-
-			ws.onopen = async () => {
-				console.log("ws started");
-				ws.send(auth.email);
-				ws.send(auth.password);
-				send_message(auth.email, new_message("Hello Proto!"));
-        console.log(await Electron.ipcRenderer.invoke('get-all-messages'));
-			};
-
-			ws.onmessage = async function message(event) {
-        console.log("on message");
-				let data = event.data;
-				if (data == "😝") return;
-				let message_json = JSON.parse(event.data.toString());
-				let Message = protos.lookupType("Message");
-				let message = Message.decode(await Crypto.decryptBytes(auth.private_key, message_json.data));
-				await Electron.ipcRenderer.invoke('save-message', message, message_json.sender);
-				console.log(await Electron.ipcRenderer.invoke('get-all-messages'));
-			};
+			//doesn't work quite yet
+			
+			// window.electronAPI.onWebsocketOpen((event) => {
+			// 	console.log("websocket opened");
+			// });
+			// window.electronAPI.onWebsocketOpen((event, message) => {
+			// 	console.log("new message", message);
+			// });
+			await Electron.ipcRenderer.invoke('start-websocket');
 		})();
 	}, []);
 
@@ -167,9 +151,24 @@ async function send_message(recipient, message) {
 	});
 }
 
-function new_message(text) {
+function new_message(text, replyuuid) {
 	let Message = protos.lookupType("Message");
-	return Message.create({text: text, uuid: window.crypto.randomUUID(), timestamp: ""+Date.now()});
+	return Message.create({text: text, uuid: window.crypto.randomUUID(), timestamp: ""+Date.now(), aboutuuid: replyuuid, reply: (replyuuid !== undefined)});
+}
+
+function new_reaction(reaction, aboutuuid) {
+	let Message = protos.lookupType("Message");
+	return Message.create({text: "", uuid: window.crypto.randomUUID(), timestamp: ""+Date.now(), aboutuuid: aboutuuid, reaction: reaction});
+}
+
+function new_delivered_receipt(message_uuid) {
+	let Message = protos.lookupType("Message");
+	return Message.create({text: "", uuid: window.crypto.randomUUID(), timestamp: ""+Date.now(), aboutuuid: message_uuid, status: 0});
+}
+
+function new_read_receipt(message_uuid) {
+	let Message = protos.lookupType("Message");
+	return Message.create({text: "", uuid: window.crypto.randomUUID(), timestamp: ""+Date.now(), aboutuuid: message_uuid, status: 1});
 }
 
 function afterGetmessages(messages)

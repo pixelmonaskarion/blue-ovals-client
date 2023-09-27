@@ -1,3 +1,4 @@
+const WebSocket = require("ws").WebSocket;
 const electron = require("electron");
 const { Notification, Menu, Tray } = require("electron");
 const path = require("path");
@@ -7,7 +8,7 @@ remote_main.initialize();
 const { existsSync, writeFileSync, readFileSync } = require("fs");
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
-const Crypto = require("./Crypto");
+const Crypto = require("./NodeCrypto");
 const sqlite3 = require('sqlite3').verbose();
 
 let mainWindow;
@@ -37,7 +38,14 @@ async function createWindow() {
 		tray = new Tray(__dirname + "/../build/SharedClipboardColor.png");
 	}
 	const contextMenu = Menu.buildFromTemplate([
-		{ label: 'SharedClipboard', type: 'normal', enabled: false },
+		{ label: 'Blue Ovals', type: 'normal', enabled: false },
+		{ label: 'Show/Hide', type: 'checkbox', click: () => {
+			if (mainWindow.isVisible()) {
+				mainWindow.hide();
+			} else {
+				mainWindow.show();
+			}
+		}},
 		{ label: 'Quit', type: 'checkbox', role: "quit" },
 	])
 	tray.setContextMenu(contextMenu)
@@ -54,7 +62,13 @@ async function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 800,
 		height: 600,
-		webPreferences: { nodeIntegration: true, contextIsolation: false },
+		webPreferences: { nodeIntegration: true, contextIsolation: false, preload: path.join(__dirname, 'preload.js') },
+	});
+	mainWindow.on('close', function (evt) {
+		if (mainWindow.isVisible()) {
+			evt.preventDefault();
+			mainWindow.hide();
+		}
 	});
 	mainWindow.loadFile(path.join(__dirname, "../build/index.html"));
 	let webContents = mainWindow.webContents;
@@ -71,12 +85,14 @@ electron.ipcMain.handle('get-auth', async (event) => {
 });
 
 electron.ipcMain.handle('save-message', async (event, message, sender) => {
-	//message should be a protobuf object
-	console.log(message);
-	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}', '${sender}', ${message.timestamp})`;
-	console.log(sql_command);
-	db.run(sql_command);
+	return save_message(message, sender);
 });
+
+function save_message(message, sender) {
+	let sql_command = `INSERT INTO messages VALUES ('${message.uuid}', '${message.text}', '${sender}', ${message.timestamp})`;
+	db.run(sql_command);
+	return {uuid: message.uuid, text: message.text, sender: sender, sent_timestamp: message.timestamp};
+}
 
 electron.ipcMain.handle('get-all-messages', async (event) => {
 	let promise = new Promise((resolve, reject) => {
@@ -108,6 +124,32 @@ electron.ipcMain.handle('get-some-messages', async (event, sql) => {
 	return promise;
 });
 
+electron.ipcMain.handle('start-websocket', async (event) => {
+	const ws = new WebSocket('wss://chrissytopher.com:40441/events/' + auth.uuid);
+
+	ws.on('error', console.error);
+
+	ws.on('open', function open() {
+		console.log("ws started");
+		ws.send(auth.email);
+		ws.send(auth.password);
+		//I haven't quite figured out how to get this to work but I'll figure it out soon
+		mainWindow.webContents.send('websocket-open');
+	});
+
+	ws.on('message', async function message(data) {
+		if (data == "😝") return;
+		let message_json = JSON.parse(data.toString());
+		let Message = protos.lookupType("Message");
+		let message = Message.decode(await Crypto.decryptAsArray(auth.private_key, message_json.data));
+		save_message(message, message_json.sender);
+		//for now there is no way to get a callback on a new message, poll the database on an interval
+		mainWindow.webContents.send('websocket-message', message);
+
+		//testing code
+		console.log(message);
+	});
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

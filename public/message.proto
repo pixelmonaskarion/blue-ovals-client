@@ -4,4 +4,14 @@ message Message {
     string text = 1;
     string uuid = 2;
     string timestamp = 3;
+    string aboutuuid = 4; //for reactions, replies, and receipts, this stores the uuid this message is about
+    bool reply = 5; //true if this message is a reply
+    //for these two just don't set them if the message isn't a receipt/reaction
+    Status status = 6; //for read receipts
+    string reaction = 7; //reaction, can be whatever makes the most sense for the ui
+}
+
+enum Status {
+    Delivered = 0;
+    Read = 1;
 }
