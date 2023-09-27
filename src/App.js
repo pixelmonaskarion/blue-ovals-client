@@ -1,5 +1,5 @@
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Crypto from "./Crypto.js"
 import { TextField, IconButton, Send, Icon } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -8,6 +8,8 @@ var protobuf = require("protobufjs");
 let protos = await load_protobufs();
 
 function App() {
+  const [email, setEmail] = useState("christopher@huntwork.net");
+
 	useEffect(() => {
 		(async () => {
 			if (await Electron.ipcRenderer.invoke('get-auth') === undefined) {
@@ -15,6 +17,7 @@ function App() {
 					email: "christopher@huntwork.net",
 					password: "balls",
 				};
+        setEmail(basic_auth_json.email);
 				//check if req failed later but for now it doesn't matter
 				// eslint-disable-next-line no-unused-vars
 				let create_res = await (await fetch("https://chrissytopher.com:40441/create-account/", {
@@ -52,6 +55,9 @@ function App() {
 			}
 			let auth = await Electron.ipcRenderer.invoke('get-auth');
 			const ws = new WebSocket('wss://chrissytopher.com:40441/events/' + auth.uuid);
+      ws.onclose = () => {
+        console.log("ws closing");
+      }
 			ws.onerror = console.error;
 
 			ws.onopen = async () => {
@@ -59,9 +65,11 @@ function App() {
 				ws.send(auth.email);
 				ws.send(auth.password);
 				send_message(auth.email, new_message("Hello Proto!"));
+        console.log(await Electron.ipcRenderer.invoke('get-all-messages'));
 			};
 
 			ws.onmessage = async function message(event) {
+        console.log("on message");
 				let data = event.data;
 				if (data == "😝") return;
 				let message_json = JSON.parse(event.data.toString());
@@ -73,81 +81,42 @@ function App() {
 		})();
 	}, []);
 
-	const messages = [
-		{
-			self: false,
-			text: "Hello World!"
-		},
-		{
-			self: true,
-			text: "Hello World!"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-		{
-			self: true,
-			text: "This is a mesaging app This is a mesaging app This is a mesaging app This is a mesaging app This is a mesaging app This is a mesaging app This is a mesaging app This is a mesaging app"
-		},
-		{
-			self: false,
-			text: "Yes it is"
-		},
-	];
+	const [messageList, setMessageList] = useState([]);
 
 	const [fieldValue, setFieldValue] = useState('');
+
+  const messagesEndRef = useRef();
 
 	function handleTextFieldChange(e) {
 		setFieldValue(e.target.value);
 	}
 
-	
+  Electron.ipcRenderer.invoke('get-all-messages').then(data => {
+    setMessageList(afterGetmessages(data));
+    //console.log(messageList);
+  });
 
+  useEffect(() => {
+    if (messageList.length)
+    {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+
+  }, [messageList.length]);
+
+	
 	return (
 		<div className='App'>
 			<div className='messagesList'>
 				{/* Render chat messages here */}
-				{messages.map((message2, i) => (
-					<Message message={message2.text} self={message2.self}/>
+				{messageList.map((message2, i) => (
+					<Message message={message2.text} self={(message2.sender == email)}/>
 				))}
 				{/* Add more message items as needed */}
+        <div ref={messagesEndRef} />
 			</div>
 			<div className='inputContainer'>
 				<TextField className='messageInput' label="Type message..." variant="standard" onChange={handleTextFieldChange}/>
@@ -201,6 +170,12 @@ async function send_message(recipient, message) {
 function new_message(text) {
 	let Message = protos.lookupType("Message");
 	return Message.create({text: text, uuid: window.crypto.randomUUID(), timestamp: ""+Date.now()});
+}
+
+function afterGetmessages(messages)
+{
+  //console.log(messages);
+  return messages;
 }
 
 const Message = (props) => {
