@@ -62,25 +62,49 @@
   margin-right: 3vw;
 }
 
-.selfMessage {
-  background-color: #3e9eff;
+.selfMessageWrapper {
   align-self: flex-end;
-  margin: 10px;
-  padding: 10px;
-  border-radius: 15px 15px 0px 15px;
-  padding-top: 0px;
-  padding-bottom: 0px;
+  
   max-width: 60vw;
 }
 
-.otherMessage {
-  background-color: gray;
+.selfInnerMessage {
+  background-color: #3e9eff;
+  border-radius: 15px 15px 0px 15px;
+  margin: 10px;
+  padding: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.selfInnerMessage p {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.otherMessageWrapper {
   align-self: flex-start;
   margin: 10px;
   padding: 10px;
-  border-radius: 0px 15px 15px 15px;
-  padding-top: 0px;
-  padding-bottom: 0px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   max-width: 60vh;
+}
+
+.otherInnerMessage {
+  background-color: gray;
+  border-radius: 0px 15px 15px 15px;
+}
+
+.otherInnerMessage p {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.timestamp {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  text-align: right;
+  margin-right: 5px;
 }
 

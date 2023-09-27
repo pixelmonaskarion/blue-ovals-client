@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import Crypto from "./Crypto.js"
 import { TextField, IconButton} from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import { TenMp } from '@mui/icons-material';
 const Electron = require("electron");
 var protobuf = require("protobufjs");
 let protos = await load_protobufs();
@@ -47,7 +48,7 @@ function MessagesScreen() {
         message_elements = <div className='messagesList'>
             {/* Render chat messages here */}
             {messageList.map((message2, i) => (
-                <Message message={message2.text} self={(message2.sender === auth.email)}/>
+                <Message message={message2.text} self={(message2.sender === auth.email)} timestamp={message2.sent_timestamp}/>
             ))}
             {/* Add more message items as needed */}
             <div ref={messagesEndRef} />
@@ -135,10 +136,15 @@ function afterGetmessages(messages)
 const Message = (props) => {
 	const message = props.message ? props.message : "no message";
 	const self = props.self;
+	const timestamp = new Date(props.timestamp);
 
 	return (
-		<div className={self ? 'selfMessage' : 'otherMessage'}>
-			<p>{message}</p>
+		<div className={self ? 'selfMessageWrapper' : 'otherMessageWrapper'}>
+			<div className={self ? 'selfInnerMessage' : 'selfInnerMessage'}>
+				<p>{message}</p>
+			</div>
+			
+			<p className='timestamp'>{timestamp.getHours()%12}:{timestamp.getMinutes()}</p>
 		</div>
 	);
 }
